@@ -10,7 +10,7 @@ public class Gun_script_enemy : MonoBehaviour
 
     private GameObject Player;
     private Transform Muzzle;
-    
+    private GameObject muzzleFlash;
 
     private Transform aimTransform;
     private Vector3 mousePos;
@@ -38,6 +38,7 @@ public class Gun_script_enemy : MonoBehaviour
         aim = this.transform.GetChild(0).gameObject;
         GameObject gun = aim.transform.GetChild(0).gameObject;
         Muzzle = gun.transform.GetChild(0).gameObject.transform;
+        muzzleFlash = Muzzle.transform.GetChild(0).gameObject;
         Bullet = gun.transform.GetChild(1).gameObject;
 
         //RightHandOn = true;
@@ -109,9 +110,16 @@ public class Gun_script_enemy : MonoBehaviour
             if(Time.time > nextShootTime)
             {
                 Vector3 angle = new Vector3(0, 0, 0);
-                GameObject bullet_Shot = Instantiate(Bullet, Muzzle.position, Muzzle.localRotation);
+                GameObject bullet_Shot = Instantiate(Bullet, Muzzle.position, Muzzle.rotation);
+                GameObject muzzle_flash = Instantiate(muzzleFlash, Muzzle.position, Muzzle.rotation);
+                
+
                 SpriteRenderer sr_Bullet = bullet_Shot.GetComponent<SpriteRenderer>();
+                SpriteRenderer sprt_muzzle_flash = muzzle_flash.GetComponent<SpriteRenderer>();
+
                 sr_Bullet.enabled = !sr_Bullet.enabled;
+                sprt_muzzle_flash.enabled = !sprt_muzzle_flash.enabled;
+
                 Rigidbody2D rb_Bullet = bullet_Shot.GetComponent<Rigidbody2D>();
                 CircleCollider2D cCol2D = bullet_Shot.AddComponent<CircleCollider2D>();
                 rb_Bullet.AddForce((Muzzle.right + (angle * Mathf.Deg2Rad)) * Bullet_Speed, ForceMode2D.Impulse);
@@ -119,6 +127,7 @@ public class Gun_script_enemy : MonoBehaviour
                 nextShootTime = Time.time + fireRate;
 
                 Destroy(bullet_Shot, Bullet_Duration);
+                Destroy(muzzle_flash, 0.1f);
             }
 
         }

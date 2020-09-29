@@ -37,6 +37,7 @@ public class Enemy_AI_1 : MonoBehaviour
         GameObject aim = this.transform.GetChild(0).gameObject;
         gun = aim.transform.GetChild(0).gameObject;
         sprt_gun = gun.GetComponent<SpriteRenderer>();
+
         cCol2D = GetComponent<CircleCollider2D>();
         cCol2D.radius = detection_Radius;
 
@@ -127,7 +128,7 @@ public class Enemy_AI_1 : MonoBehaviour
     
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Debug.Log(other.gameObject.name);
+        //Debug.Log(other.gameObject.name);
         if(other.gameObject.tag == "Player")
         {
             Alert = true;
