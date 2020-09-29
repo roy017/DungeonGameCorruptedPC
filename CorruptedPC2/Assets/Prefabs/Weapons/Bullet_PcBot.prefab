@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 2724440437394100267}
   - component: {fileID: 7135455201814082559}
   - component: {fileID: 8756425065362492472}
-  m_Layer: 0
-  m_Name: Bullet_Nerd 1
-  m_TagString: Untagged
+  m_Layer: 11
+  m_Name: Bullet_PcBot
+  m_TagString: Bullet_Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -104,7 +104,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!114 &8756425065362492472
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 2319232720954700819}
   - component: {fileID: 2319232720954700818}
   - component: {fileID: 2023567427}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Nerd
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -254,7 +254,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 100
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 0
@@ -262,7 +262,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 4
 --- !u!114 &2319232720954700818
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -288,7 +288,7 @@ BoxCollider2D:
   m_Enabled: 1
   m_Density: 1
   m_Material: {fileID: 0}
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: -0.003119886, y: 0.025298655}
@@ -303,7 +303,7 @@ BoxCollider2D:
   m_AutoTiling: 0
   serializedVersion: 2
   m_Size: {x: 0.61937594, y: 0.74968374}
-  m_EdgeRadius: 1
+  m_EdgeRadius: 0
 --- !u!1 &2319232721513357713
 GameObject:
   m_ObjectHideFlags: 0
@@ -505,6 +505,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2319232720084453554}
     m_Modifications:
+    - target: {fileID: 912560019, guid: 09ffb8bbd909328478475c9727b26354, type: 3}
+      propertyPath: m_Mass
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 912560019, guid: 09ffb8bbd909328478475c9727b26354, type: 3}
+      propertyPath: m_Constraints
+      value: 4
+      objectReference: {fileID: 0}
     - target: {fileID: 2378449858297102288, guid: 09ffb8bbd909328478475c9727b26354, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -552,6 +560,14 @@ PrefabInstance:
     - target: {fileID: 3621590445973593588, guid: 09ffb8bbd909328478475c9727b26354, type: 3}
       propertyPath: m_Name
       value: Bullet
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621590445973593588, guid: 09ffb8bbd909328478475c9727b26354, type: 3}
+      propertyPath: m_TagString
+      value: Bullet_Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 3621590445973593588, guid: 09ffb8bbd909328478475c9727b26354, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 5100628496785747015, guid: 09ffb8bbd909328478475c9727b26354, type: 3}
       propertyPath: m_Enabled

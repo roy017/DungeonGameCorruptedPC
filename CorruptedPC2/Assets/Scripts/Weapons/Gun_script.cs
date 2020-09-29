@@ -115,6 +115,7 @@ public class Gun_script : MonoBehaviour
             SpriteRenderer sr_Bullet = bullet_Shot.GetComponent<SpriteRenderer>();
             sr_Bullet.enabled = !sr_Bullet.enabled;
             Rigidbody2D rb_Bullet = bullet_Shot.GetComponent<Rigidbody2D>();
+            CircleCollider2D cCol2D = bullet_Shot.AddComponent<CircleCollider2D>();
             rb_Bullet.AddForce((Muzzle.right + (angle * Mathf.Deg2Rad)) * Bullet_Speed, ForceMode2D.Impulse);
 
             Destroy(bullet_Shot, Bullet_Duration);
