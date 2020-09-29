@@ -15,6 +15,8 @@ public class Enemy_AI_1 : MonoBehaviour
     private Rigidbody2D rb;
     private bool gotHit = false;
     private float gotHitTime;
+    private bool gotPushed = false;
+    private float push_force = 5f;
 
     public float MIN_Roam_Dist = 10f;
     public float MAX_Roam_Dist = 50f;
@@ -84,6 +86,14 @@ public class Enemy_AI_1 : MonoBehaviour
                     gotHit = false;
                 }
             }
+            else if (gotPushed == true)
+            {
+                if (Time.time > (gotHitTime + stun_by_hit_time))
+                {
+                    gotPushed = false;
+                    rb.constraints = RigidbodyConstraints2D.FreezeAll;
+                }
+            }
             else
                 if (Vector3.Distance(transform.position, player.transform.position) > 2f)
                 {
@@ -144,9 +154,20 @@ public class Enemy_AI_1 : MonoBehaviour
     private void OnCollisionEnter2D(Collision2D collision)
     {
         PolygonCollider2D enemyCol = GetComponent<PolygonCollider2D>();
-        if(collision.gameObject.tag == "Bullet_Player" || collision.gameObject.tag == "Player")
+        if(collision.gameObject.tag == "Bullet_Player")
         {
             gotHit = true;
+            gotHitTime = Time.time;
+        }
+        if(collision.gameObject.tag == "Player")
+        {
+            gotHit = false;
+            gotPushed = true;
+            Vector3 dir = collision.contacts[0].point - (Vector2)transform.position;
+            dir = -dir.normalized;
+            rb.constraints = RigidbodyConstraints2D.None;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+            rb.AddForce(dir * push_force);
             gotHitTime = Time.time;
         }
         
