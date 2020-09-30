@@ -16,6 +16,8 @@ public class Gun_script_enemy : MonoBehaviour
     private Vector3 mousePos;
     private Vector3 handPosR, handPosL;
     private GameObject aim;
+    private GameObject gun;
+    private Animator anim_gun;
     private bool LeftHandOn;// RightHandOn;
     private float nextShootTime;
 
@@ -36,10 +38,12 @@ public class Gun_script_enemy : MonoBehaviour
         handPosR = new Vector3(aimTransform.localPosition.x, aimTransform.localPosition.y, aimTransform.localPosition.z);
         handPosL = new Vector3(-aimTransform.localPosition.x, aimTransform.localPosition.y, aimTransform.localPosition.z);
         aim = this.transform.GetChild(0).gameObject;
-        GameObject gun = aim.transform.GetChild(0).gameObject;
+        gun = aim.transform.GetChild(0).gameObject;
         Muzzle = gun.transform.GetChild(0).gameObject.transform;
         muzzleFlash = Muzzle.transform.GetChild(0).gameObject;
         Bullet = gun.transform.GetChild(1).gameObject;
+
+        anim_gun = gun.GetComponent<Animator>();
 
         //RightHandOn = true;
         LeftHandOn = false;
@@ -107,8 +111,10 @@ public class Gun_script_enemy : MonoBehaviour
             //Vector3 angle = new Vector3( 0, Random.Range(-Gun_Spread_angle, Gun_Spread_angle), 0);
 
             //fireRate = 0.5f;
-            if(Time.time > nextShootTime)
+            //anim_gun.SetBool("Shoot");
+            if (Time.time > nextShootTime)
             {
+                anim_gun.SetTrigger("Shoot");
                 Vector3 angle = new Vector3(0, 0, 0);
                 GameObject bullet_Shot = Instantiate(Bullet, Muzzle.position, Muzzle.rotation);
                 GameObject muzzle_flash = Instantiate(muzzleFlash, Muzzle.position, Muzzle.rotation);
@@ -128,6 +134,7 @@ public class Gun_script_enemy : MonoBehaviour
 
                 Destroy(bullet_Shot, Bullet_Duration);
                 Destroy(muzzle_flash, 0.1f);
+                
             }
 
         }

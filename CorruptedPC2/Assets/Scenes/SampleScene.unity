@@ -223,7 +223,7 @@ Transform:
   m_GameObject: {fileID: 519420028}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -10}
-  m_LocalScale: {x: 2, y: 2, z: 3}
+  m_LocalScale: {x: 1, y: 1, z: 3}
   m_Children:
   - {fileID: 1988045875}
   m_Father: {fileID: 0}
@@ -271,18 +271,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 7299790987304439201, guid: ff553da111a660a42af9b634f9bbc94d, type: 3}
-      propertyPath: m_WasSpriteAssigned
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7299790987304439201, guid: ff553da111a660a42af9b634f9bbc94d, type: 3}
-      propertyPath: m_Size.x
-      value: 0.09375
-      objectReference: {fileID: 0}
-    - target: {fileID: 7299790987304439201, guid: ff553da111a660a42af9b634f9bbc94d, type: 3}
-      propertyPath: m_Size.y
-      value: 0.09375
-      objectReference: {fileID: 0}
     - target: {fileID: 8163369526494988145, guid: ff553da111a660a42af9b634f9bbc94d, type: 3}
       propertyPath: m_Name
       value: PcBot_Enemy
