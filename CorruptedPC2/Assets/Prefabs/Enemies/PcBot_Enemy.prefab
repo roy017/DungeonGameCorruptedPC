@@ -338,8 +338,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 0}
-  MIN_Roam_Dist: 1
-  MAX_Roam_Dist: 5
+  distance_to_player: 4
+  MIN_Roam_Dist: 4
+  MAX_Roam_Dist: 8
   enemy_Speed: 2
   Alert: 0
   detection_Radius: 5
@@ -358,7 +359,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   enemy_Script: {fileID: 0}
   Gun_Spread_angle: 10
-  shoot_distance: 5
+  shoot_distance: 8
   Bullet_Speed: 10
   Bullet_Duration: 5
   fireRate: 1

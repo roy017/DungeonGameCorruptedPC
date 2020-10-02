@@ -18,6 +18,7 @@ public class Enemy_AI_1 : MonoBehaviour
     private bool gotPushed = false;
     private float push_force = 5f;
 
+    public float distance_to_player = 4f;
     public float MIN_Roam_Dist = 10f;
     public float MAX_Roam_Dist = 50f;
     public float enemy_Speed = 1f;
@@ -96,7 +97,7 @@ public class Enemy_AI_1 : MonoBehaviour
                 }
             }
             else
-                if (Vector3.Distance(transform.position, player.transform.position) > 2f)
+                if (Vector3.Distance(transform.position, player.transform.position) > distance_to_player)
                 {
                     transform.position = Vector3.MoveTowards(transform.position, player.transform.position, enemy_Speed * Time.deltaTime);
                 }

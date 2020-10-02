@@ -1,7 +1,19 @@
 fileFormatVersion: 2
-guid: e5009ba0d5414454690b912f176ff295
+guid: afde37f3eebe8b744962012522d0d61e
 TextureImporter:
-  internalIDToNameTable: []
+  internalIDToNameTable:
+  - first:
+      213: 7512662211386379824
+    second: Nerd_Gun_extra_0
+  - first:
+      213: 1544498159762706630
+    second: Nerd_Gun_extra_1
+  - first:
+      213: -4534604273759134097
+    second: Nerd_Gun_extra_2
+  - first:
+      213: 8037032259648558073
+    second: Nerd_Gun_extra_3
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -41,7 +53,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -123,7 +135,91 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites: []
+    sprites:
+    - serializedVersion: 2
+      name: Nerd_Gun_extra_1
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 1
+        width: 5
+        height: 6
+      alignment: 9
+      pivot: {x: 0.2, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6c096e8a4e82f6510800000000000000
+      internalID: 1544498159762706630
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Nerd_Gun_extra_0
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 25
+        width: 9
+        height: 5
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 03e8f2b3a76524860800000000000000
+      internalID: 7512662211386379824
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Nerd_Gun_extra_2
+      rect:
+        serializedVersion: 2
+        x: 18
+        y: 18
+        width: 3
+        height: 4
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f6e5e993079d111c0800000000000000
+      internalID: -4534604273759134097
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Nerd_Gun_extra_3
+      rect:
+        serializedVersion: 2
+        x: 30
+        y: 11
+        width: 1
+        height: 2
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9f315b41246498f60800000000000000
+      internalID: 8037032259648558073
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
