@@ -7,6 +7,9 @@ TagManager:
   - Enemy
   - Bullet_Enemy
   - Bullet_Player
+  - BossRoom
+  - SpawnRoom
+  - Room
   layers:
   - Default
   - TransparentFX
