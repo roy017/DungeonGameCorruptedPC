@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TriangleNet.Geometry;
+using TriangleNet.Topology;
 
 public class room_generator : MonoBehaviour
 {
@@ -27,6 +29,7 @@ public class room_generator : MonoBehaviour
 
     private List<int> SpawnRoomsList;
     private List<int> AllStayingRooms;
+    [SerializeField]
     private int totalStayingRooms = 20;
 
     public float radius = 2f;
@@ -40,6 +43,10 @@ public class room_generator : MonoBehaviour
     private bool stillAwake = true;
     private bool corrected = false;
     private bool setupStageDone = false;
+
+    Polygon polygon = new Polygon();
+    private TriangleNet.Mesh mesh = null;
+    private bool DelaunayDone = false;
 
     private void Start()
     {
@@ -80,6 +87,12 @@ public class room_generator : MonoBehaviour
                 tagRooms();
                 pickRooms();
             }
+        }
+        else
+        {
+            if(DelaunayDone == false)
+                Delaunay();
+            //OnDrawGizmos();
         }
 
         if(roomArray != null)
@@ -240,6 +253,52 @@ public class room_generator : MonoBehaviour
             }
         }
         roomArray = null;
+    }
+
+    void Delaunay()
+    {
+        for (int i = 0; i < stayingRoomArray.Length; i++)
+        {
+            //Debug.Log("index: " + i + " x: " + stayingRoomArray[i].room.transform.position.x + " y: " + stayingRoomArray[i].room.transform.position.y);
+            polygon.Add(new Vertex(stayingRoomArray[i].room.transform.position.x, stayingRoomArray[i].room.transform.position.y));
+        }
+        TriangleNet.Meshing.ConstraintOptions options = new TriangleNet.Meshing.ConstraintOptions() { Convex = false, ConformingDelaunay = false };
+        //TriangleNet.Meshing.QualityOptions quality = new TriangleNet.Meshing.QualityOptions() { SteinerPoints = 0, MinimumAngle = 90 };
+        //Debug.Log(polygon.Triangulate(options));
+        mesh = (TriangleNet.Mesh)polygon.Triangulate(options);
+        //Debug.Log(mesh.Vertices);
+
+        foreach (Edge edge in mesh.Edges)
+        {
+            Vertex v0 = mesh.vertices[edge.P0];
+            Vertex v1 = mesh.vertices[edge.P1];
+            Vector3 p0 = new Vector3((float)v0.x, (float)v0.y, 0.0f);
+            Vector3 p1 = new Vector3((float)v1.x, (float)v1.y, 0.0f);
+            Debug.Log("p0: " + p0 + " p1: " + p1);
+        }
+
+        DelaunayDone = true;
+    }
+
+    public void OnDrawGizmos()
+    {
+        //Debug.Log("Hello00000000000000000000000000000000000");
+        if (mesh == null)
+        {
+            // We're probably in the editor
+            return;
+        }
+
+        
+        Gizmos.color = Color.red;
+        foreach (Edge edge in mesh.Edges)
+        {
+            Vertex v0 = mesh.vertices[edge.P0];
+            Vertex v1 = mesh.vertices[edge.P1];
+            Vector3 p0 = new Vector3((float)v0.x, (float)v0.y, 0.0f);
+            Vector3 p1 = new Vector3((float)v1.x, (float)v1.y, 0.0f);
+            Gizmos.DrawLine(p0, p1);
+        }
     }
 
     void correctPosRooms()
