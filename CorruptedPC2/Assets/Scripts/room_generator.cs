@@ -51,6 +51,10 @@ public class room_generator : MonoBehaviour
     private bool DelaunayDone = false;
     private bool MSTDone = false;
 
+    private int[,] ansMSt = null;
+    private List<int> listDel1;
+    private List<int> listDel2;
+
     class MST
     {
         static int V;
@@ -389,10 +393,66 @@ public class room_generator : MonoBehaviour
             Vertex v1 = mesh.vertices[edge.P1];
             Vector3 p0 = new Vector3((float)v0.x, (float)v0.y, 0.0f);
             Vector3 p1 = new Vector3((float)v1.x, (float)v1.y, 0.0f);
-            Debug.Log("p0: " + p0 + " p1: " + p1);
+            //Debug.Log("p0: " + p0 + " p1: " + p1);
         }
-
         DelaunayDone = true;
+        extractDelaunay();
+    }
+    void extractDelaunay()
+    {
+        int[,] ansDEL = new int[mesh.NumberOfEdges,1];
+        int k = 0, l = 0, j = 0;
+        bool found1 = false, found2 = false;
+
+        // tempoaray solution with two lists, fix if a better solution is found
+        listDel1 = new List<int>();
+        listDel2 = new List<int>();
+        foreach (Edge edge in mesh.Edges)
+        {
+            Vertex v0 = mesh.vertices[edge.P0];
+            Vertex v1 = mesh.vertices[edge.P1];
+            Vector3 p0 = new Vector3((float)v0.x, (float)v0.y, 0.0f);
+            Vector3 p1 = new Vector3((float)v1.x, (float)v1.y, 0.0f);
+            for (int i = 0; i < stayingRoomArray.Length; i++)
+            {
+                Debug.Log("Ik Zoek");
+                if (p0 == stayingRoomArray[i].room.transform.position && found1 == false)
+                {
+                    Debug.Log("Gevonden1");
+                    k = i;
+                    //listDel1.Add(k);
+                    found1 = true;
+                }
+                else if (p1 == stayingRoomArray[i].room.transform.position && found2 == false)
+                {
+                    Debug.Log("Gevonden2");
+                    l = i;
+                    //listDel2.Add(j);
+                    found2 = true;
+                }
+                if(found1 == true && found2 == true)
+                {
+                    found1 = found2 = false;
+                    break;
+                }
+            }
+            listDel1.Add(k);
+            listDel2.Add(l);
+        }
+        
+        for(int i = 0; i < listDel1.Count; i++)
+        {
+            Debug.Log("From: " + stayingRoomArray[listDel1[i]].room.name + " to: " + stayingRoomArray[listDel2[i]].room.name);
+        }
+        
+
+        //j++;
+        /*
+        for (int i = 0; i < stayingRoomArray.Length; i++)
+        {
+            GameObject r1 = stayingRoomArray[i].room;
+        }
+        */
     }
 
     void find_MST()
@@ -403,21 +463,18 @@ public class room_generator : MonoBehaviour
 
         int[,] graph = graph_Gen();
 
-        int[,] ans = spanningTree.runMST(graph);
+        ansMSt = spanningTree.runMST(graph);
 
         //draws line connections
         for (int i = 1; i < AllStayingRooms.Count; i++)
         {
-
             Transform pos1 = stayingRoomArray[i].room.transform;
-            Transform pos2 = stayingRoomArray[ans[i, 0]].room.transform;
+            Transform pos2 = stayingRoomArray[ansMSt[i, 0]].room.transform;
 
             Debug.DrawLine(new Vector3(pos1.position.x, pos1.position.y, pos1.position.z),
                 new Vector3(pos2.position.x, pos2.position.y, pos2.position.z), Color.green, 2000f, true);
-
-
         }
-        createPath(ans);
+        createPath(ansMSt);
         MSTDone = true;
     }
 
@@ -425,18 +482,18 @@ public class room_generator : MonoBehaviour
     {
         for (int i = 1; i < AllStayingRooms.Count; i++)
         {
+            GameObject r1 = stayingRoomArray[i].room.transform.gameObject;
+            GameObject r2 = stayingRoomArray[ans[i, 0]].room.transform.gameObject;
             Transform pos1 = stayingRoomArray[i].room.transform;
             Transform pos2 = stayingRoomArray[ans[i, 0]].room.transform;
-            Debug.Log("From: x: " + (int)pos1.transform.position.x + "y: " + (int)pos1.transform.position.y + "z: " + (int)pos1.transform.position.z);
-            Debug.Log("TO: x: " + (int)pos2.transform.position.x + "y: " + (int)pos2.transform.position.y + "z: " + (int)pos2.transform.position.z);
-            //child1.GetComponent<Tilemap>();
+            //Debug.Log("From: " + r1.name + " to: " + r2.name);
+            //Debug.Log("From: x: " + (int)pos1.transform.position.x + "y: " + (int)pos1.transform.position.y + "z: " + (int)pos1.transform.position.z);
+            //Debug.Log("TO: x: " + (int)pos2.transform.position.x + "y: " + (int)pos2.transform.position.y + "z: " + (int)pos2.transform.position.z);
         }
     }
 
     int[,] graph_Gen()
     {
-
-        //int length = AllStayingRooms.Count;
         int length = stayingRoomArray.Length;
         int[,] graph = new int[(length), (length)];
         for (int i = 0; i < length; i++)
@@ -449,8 +506,6 @@ public class room_generator : MonoBehaviour
                     continue;
                 }
 
-                //GameObject child1 = stayingRoomArray[i].room.transform.GetChild(0).gameObject;
-                //GameObject child2 = stayingRoomArray[j].room.transform.GetChild(0).gameObject;
                 float x1 = stayingRoomArray[i].room.transform.position.x;
                 float x2 = stayingRoomArray[j].room.transform.position.x;
                 float y1 = stayingRoomArray[i].room.transform.position.y;
@@ -458,9 +513,7 @@ public class room_generator : MonoBehaviour
                 float calc = Mathf.Sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));
                 graph[i, j] = (int)calc;
             }
-
         }
-
         return graph;
     }
 
