@@ -15,6 +15,8 @@ public class room_generator : MonoBehaviour
         public int ID;
         public string tag;
     }
+
+
     private Room_info[] roomArray;
     private Room_info[] stayingRoomArray;
 
@@ -47,6 +49,120 @@ public class room_generator : MonoBehaviour
     Polygon polygon = new Polygon();
     private TriangleNet.Mesh mesh = null;
     private bool DelaunayDone = false;
+    private bool MSTDone = false;
+
+    class MST
+    {
+        static int V;
+
+        public void SetV(int v)
+        {
+            V = v;
+        }
+
+        static int minKey(int[] key, bool[] mstSet)
+        {
+            int min = int.MaxValue, min_index = -1;
+
+            for (int v = 0; v < V; v++)
+                if (mstSet[v] == false && key[v] < min)
+                {
+                    min = key[v];
+                    min_index = v;
+                }
+
+            return min_index;
+        }
+
+        static void printMST(int[] parent, int[,] graph)
+        {
+            Debug.Log("Edge \tWeight");
+            for (int i = 1; i < V; i++)
+                Debug.Log(parent[i] + " - " + i + "\t" + graph[i, parent[i]]);
+        }
+
+        static int[,] primMST(int[,] graph)
+        {
+
+            // Array to store constructed MST
+            int[] parent = new int[V];
+
+            // Key values used to pick
+            // minimum weight edge in cut
+            int[] key = new int[V];
+
+            // To represent set of vertices
+            // included in MST
+            bool[] mstSet = new bool[V];
+
+            // Initialize all keys
+            // as INFINITE
+            for (int i = 0; i < V; i++)
+            {
+                key[i] = int.MaxValue;
+                mstSet[i] = false;
+            }
+
+            // Always include first 1st vertex in MST.
+            // Make key 0 so that this vertex is
+            // picked as first vertex
+            // First node is always root of MST
+            key[0] = 0;
+            parent[0] = -1;
+
+            // The MST will have V vertices
+            for (int count = 0; count < V - 1; count++)
+            {
+
+                // Pick thd minimum key vertex
+                // from the set of vertices
+                // not yet included in MST
+                int u = minKey(key, mstSet);
+
+                // Add the picked vertex
+                // to the MST Set
+                mstSet[u] = true;
+
+                // Update key value and parent
+                // index of the adjacent vertices
+                // of the picked vertex. Consider
+                // only those vertices which are
+                // not yet included in MST
+                for (int v = 0; v < V; v++)
+
+                    // graph[u][v] is non zero only
+                    // for adjacent vertices of m
+                    // mstSet[v] is false for vertices
+                    // not yet included in MST Update
+                    // the key only if graph[u][v] is
+                    // smaller than key[v]
+                    if (graph[u, v] != 0 && mstSet[v] == false
+                        && graph[u, v] < key[v])
+                    {
+                        parent[v] = u;
+                        key[v] = graph[u, v];
+                    }
+            }
+
+            int[,] ans = new int[V, 1];
+            for (int i = 1; i < V; i++)
+            {
+                ans[i, 0] = parent[i];
+
+            }
+
+            return (ans);
+
+            // print the constructed MST
+            //printMST(parent, graph);
+        }
+        public int[,] runMST(int[,] graph)
+        {
+
+            int[,] ans = primMST(graph);
+            return (ans);
+        }
+    };
 
     private void Start()
     {
@@ -92,7 +208,8 @@ public class room_generator : MonoBehaviour
         {
             if(DelaunayDone == false)
                 Delaunay();
-            //OnDrawGizmos();
+            if(MSTDone == false)
+                find_MST();
         }
 
         if(roomArray != null)
@@ -259,14 +376,12 @@ public class room_generator : MonoBehaviour
     {
         for (int i = 0; i < stayingRoomArray.Length; i++)
         {
-            //Debug.Log("index: " + i + " x: " + stayingRoomArray[i].room.transform.position.x + " y: " + stayingRoomArray[i].room.transform.position.y);
             polygon.Add(new Vertex(stayingRoomArray[i].room.transform.position.x, stayingRoomArray[i].room.transform.position.y));
         }
         TriangleNet.Meshing.ConstraintOptions options = new TriangleNet.Meshing.ConstraintOptions() { Convex = false, ConformingDelaunay = false };
         //TriangleNet.Meshing.QualityOptions quality = new TriangleNet.Meshing.QualityOptions() { SteinerPoints = 0, MinimumAngle = 90 };
         //Debug.Log(polygon.Triangulate(options));
         mesh = (TriangleNet.Mesh)polygon.Triangulate(options);
-        //Debug.Log(mesh.Vertices);
 
         foreach (Edge edge in mesh.Edges)
         {
@@ -280,9 +395,77 @@ public class room_generator : MonoBehaviour
         DelaunayDone = true;
     }
 
+    void find_MST()
+    {
+        MST spanningTree = new MST();
+
+        spanningTree.SetV(AllStayingRooms.Count);
+
+        int[,] graph = graph_Gen();
+
+        int[,] ans = spanningTree.runMST(graph);
+
+        //draws line connections
+        for (int i = 1; i < AllStayingRooms.Count; i++)
+        {
+
+            Transform pos1 = stayingRoomArray[i].room.transform;
+            Transform pos2 = stayingRoomArray[ans[i, 0]].room.transform;
+
+            Debug.DrawLine(new Vector3(pos1.position.x, pos1.position.y, pos1.position.z),
+                new Vector3(pos2.position.x, pos2.position.y, pos2.position.z), Color.green, 2000f, true);
+
+
+        }
+        createPath(ans);
+        MSTDone = true;
+    }
+
+    void createPath(int[,] ans)
+    {
+        for (int i = 1; i < AllStayingRooms.Count; i++)
+        {
+            Transform pos1 = stayingRoomArray[i].room.transform;
+            Transform pos2 = stayingRoomArray[ans[i, 0]].room.transform;
+            Debug.Log("From: x: " + (int)pos1.transform.position.x + "y: " + (int)pos1.transform.position.y + "z: " + (int)pos1.transform.position.z);
+            Debug.Log("TO: x: " + (int)pos2.transform.position.x + "y: " + (int)pos2.transform.position.y + "z: " + (int)pos2.transform.position.z);
+            //child1.GetComponent<Tilemap>();
+        }
+    }
+
+    int[,] graph_Gen()
+    {
+
+        //int length = AllStayingRooms.Count;
+        int length = stayingRoomArray.Length;
+        int[,] graph = new int[(length), (length)];
+        for (int i = 0; i < length; i++)
+        {
+            for (int j = 0; j < length; j++)
+            {
+                if (i == j)
+                {
+                    graph[i, j] = 0;
+                    continue;
+                }
+
+                //GameObject child1 = stayingRoomArray[i].room.transform.GetChild(0).gameObject;
+                //GameObject child2 = stayingRoomArray[j].room.transform.GetChild(0).gameObject;
+                float x1 = stayingRoomArray[i].room.transform.position.x;
+                float x2 = stayingRoomArray[j].room.transform.position.x;
+                float y1 = stayingRoomArray[i].room.transform.position.y;
+                float y2 = stayingRoomArray[j].room.transform.position.y;
+                float calc = Mathf.Sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));
+                graph[i, j] = (int)calc;
+            }
+
+        }
+
+        return graph;
+    }
+
     public void OnDrawGizmos()
     {
-        //Debug.Log("Hello00000000000000000000000000000000000");
         if (mesh == null)
         {
             // We're probably in the editor
