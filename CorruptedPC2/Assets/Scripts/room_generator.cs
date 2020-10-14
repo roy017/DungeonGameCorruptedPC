@@ -4,6 +4,7 @@ using UnityEngine;
 using TriangleNet.Geometry;
 using TriangleNet.Topology;
 using UnityEngine.Tilemaps;
+using UnityEngine.SceneManagement;
 
 public class room_generator : MonoBehaviour
 {
@@ -59,8 +60,12 @@ public class room_generator : MonoBehaviour
     private float percPathStay = 8f;
     public Tilemap TM1;
     public Tile t1;
+    public Tile t2;
+    public Tile t3;
 
     private List<Vector3> RoomDoorCords;
+
+    public int offset = 1;
 
     class MST
     {
@@ -199,6 +204,17 @@ public class room_generator : MonoBehaviour
         }
         stayingRoomArray = new Room_info[totalStayingRooms];
 
+        stillAwake = true;
+        corrected = false;
+        setupStageDone = false;
+
+        polygon = new Polygon();
+        mesh = null;
+        DelaunayDone = false;
+        MSTDone = false;
+
+        ansMST = null;
+
         CreateRooms();
         spawnRooms();
         startTime = Time.time;
@@ -206,6 +222,11 @@ public class room_generator : MonoBehaviour
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            SceneManager.LoadScene("SampleScene");
+        }
+        
         if(setupStageDone == false)
         {
             if (Time.time >= (startTime + waitTime) && stillAwake == true)
@@ -288,7 +309,7 @@ public class room_generator : MonoBehaviour
             r.transform.parent = gameObject.transform;
 
             BoxCollider2D bc2D = r.GetComponent<BoxCollider2D>();
-            bc2D.size = new Vector2(roomArray[i].width + 4f, roomArray[i].height + 4f);
+            bc2D.size = new Vector2(roomArray[i].width + 6f, roomArray[i].height + 6f);
             
 
             roomArray[i].room = r;
@@ -499,15 +520,16 @@ public class room_generator : MonoBehaviour
         */
         //createPath(ansMSt);
         MSTDone = true;
-        buildPath();
+        buildPaths();
+        //buildWalls();
     }
 
-    void buildPath()
+    //TODO improve the looks of this function
+    void buildPaths()
     {
-        Vector3 startPoint, endPoint, curPoint, midX, midY;
-        Vector3 midPoint;
+        Vector3 startPoint, endPoint, curPoint, midS, midE;
+        bool flag;
         float xS, yS, xM, yM, xE, yE;
-        xS = yS = xM = yM = xE = yE =0;
         for(int i = 1; i< AllStayingRooms.Count; i++)
         {
             Room_info r1 = stayingRoomArray[i];
@@ -518,15 +540,17 @@ public class room_generator : MonoBehaviour
             float X2 = pos2.position.x;
             float Y1 = pos1.position.y;
             float Y2 = pos2.position.y;
-            int offset = 1;
+            //offset = 1;
+            flag = false;
+            midS = midE = new Vector3(0, 0, 0);
             // contains repetitive code, which should be fixed later
-            if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width/2) + offset)  && (X2 - (r2.width / 2) + offset) <= (X1 + (r1.width / 2) - offset) || (X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 - (r1.width / 2) + offset) <= (X2 + (r2.width / 2) - offset))
+            if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 - (r2.width / 2) + offset) <= (X1 + (r1.width / 2) - offset) || (X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 - (r1.width / 2) + offset) <= (X2 + (r2.width / 2) - offset))
             {
                 if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset))
                     xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X2 + (r2.width / 2) - offset));
                 else if ((X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 + (r1.width / 2) - offset) <= (X2 + (r2.width / 2) - offset))
                     xS = xE = (int)Random.Range((X1 - (r1.width / 2) + offset), (X1 + (r1.width / 2) - offset));
-                else if((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 - (r2.width / 2) + offset) <= (X1 + (r1.width / 2) - offset))
+                else if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 - (r2.width / 2) + offset) <= (X1 + (r1.width / 2) - offset))
                     xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X1 + (r1.width / 2) - offset));
                 else
                     xS = xE = (int)Random.Range(X1 - (r1.width / 2) + offset, (X2 + (r2.width / 2) - offset));
@@ -547,7 +571,7 @@ public class room_generator : MonoBehaviour
                     xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X2 + (r2.width / 2) - offset));
                 else if ((X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 + (r1.width / 2) - offset) <= (X2 + (r2.width / 2) - offset))
                     xS = xE = (int)Random.Range((X1 - (r1.width / 2) + offset), (X1 + (r1.width / 2) - offset));
-                else if((X2 + (r2.width / 2) - offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset))
+                else if ((X2 + (r2.width / 2) - offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset))
                     xS = xE = (int)Random.Range((X1 - (r1.width / 2) + offset), (X2 + (r2.width / 2) - offset));
                 else
                     xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X1 + (r2.width / 2) - offset));
@@ -568,7 +592,7 @@ public class room_generator : MonoBehaviour
                     yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
                 else if ((Y1 - (r1.height / 2) + offset) >= (Y2 - (r2.height / 2) + offset) && (Y1 + (r1.height / 2) - offset) <= (Y2 + (r2.height / 2) - offset))
                     yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
-                else if((Y2 - (r2.height / 2) + offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 - (r2.height / 2) + offset) <= (Y1 + (r1.height / 2) - offset))
+                else if ((Y2 - (r2.height / 2) + offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 - (r2.height / 2) + offset) <= (Y1 + (r1.height / 2) - offset))
                     yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
                 else
                     yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
@@ -589,7 +613,7 @@ public class room_generator : MonoBehaviour
                     yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
                 else if ((Y1 - (r1.height / 2) + offset) >= (Y2 - (r2.height / 2) + offset) && (Y1 + (r1.height / 2) - offset) <= (Y2 + (r2.height / 2) - offset))
                     yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
-                else if((Y2 + (r2.height / 2) - offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 + (r2.height / 2) - offset) <= (Y1 + (r1.height / 2) - offset))
+                else if ((Y2 + (r2.height / 2) - offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 + (r2.height / 2) - offset) <= (Y1 + (r1.height / 2) - offset))
                     yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
                 else
                     yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
@@ -606,113 +630,72 @@ public class room_generator : MonoBehaviour
             }
             else
             {
-                if (X1 > X2)
+                flag = true;
+                if (X1 > X2 && Y1 > Y2)
                 {
-                    xS = X1 - (r1.width / 2) - 1;
-                    xE = X2;
+                    xS = X1 - (r1.width / 2) + 2;
+                    xE = X2 + (r2.width / 2);
+                    yS = Y1 - (r1.height / 2) -1;
+                    yE = Y2 + (r2.height / 2) -1 - 2;
+                    TM1.SetTile(new Vector3Int((int)xS, (int)yS - 1, 0), t1);
+                    TM1.SetTile(new Vector3Int((int)xE + 1, (int)yE, 0), t1);
+                    midS = new Vector3(xS, yS - 2, 0);
+                    midE = new Vector3(xE + 2, yE, 0);
+                }
+                else if((X1 > X2 && Y1 < Y2))
+                {
+                    xS = X1 - (r1.width / 2) + 2;
+                    xE = X2 + (r2.width / 2);
+                    yS = Y1 + (r1.height / 2);
+                    yE = Y2 - (r2.height / 2) + 2;
+                    TM1.SetTile(new Vector3Int((int)xS, (int)yS + 1, 0), t1);
+                    TM1.SetTile(new Vector3Int((int)xE + 1, (int)yE, 0), t1);
+                    midS = new Vector3(xS, yS + 2, 0);
+                    midE = new Vector3(xE + 2, yE, 0);
+
+                }
+                else if ((X1 < X2 && Y1 > Y2))
+                {
+                    xS = X1 + (r1.width / 2);
+                    xE = X2 - (r2.width / 2) + 2;
+                    yS = Y1 - (r1.height / 2) + 2;
+                    yE = Y2 + (r2.height / 2);
+                    TM1.SetTile(new Vector3Int((int)xS + 1, (int)yS, 0), t1);
+                    TM1.SetTile(new Vector3Int((int)xE, (int)yE + 1, 0), t1);
+                    midS = new Vector3(xS + 2, yS, 0);
+                    midE = new Vector3(xE, yE + 2, 0);
                 }
                 else
                 {
                     xS = X1 + (r1.width / 2);
-                    xE = X2;
-
-                }
-
-                if (Y1 > Y2)
-                {
-                    yS = Y1;
-                    yE = Y2 + (r2.height / 2);
-                }
-                else
-                {
-                    yS = Y1;
+                    xE = X2 - (r2.width / 2) + 2;
+                    yS = Y1 + (r1.height / 2) - 1 - 2;
                     yE = Y2 - (r2.height / 2) - 1;
+                    TM1.SetTile(new Vector3Int((int)xS +1, (int)yS, 0), t1);
+                    TM1.SetTile(new Vector3Int((int)xE, (int)yE -1, 0), t1);
+                    midS = new Vector3(xS + 2, yS, 0);
+                    midE = new Vector3(xE, yE - 2, 0);
                 }
             }
-            /*
-            else if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset) || (X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 + (r1.width / 2) - offset) <= (X2 + (r2.width / 2) - offset))
-            {
-                if((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset))
-                    xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X2 + (r2.width / 2) - offset));
-                else if((X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 + (r1.width / 2) - offset) <= (X2 + (r2.width / 2) - offset))
-                    xS = xE = (int)Random.Range((X1 - (r1.width / 2) + offset), (X1 + (r1.width / 2) - offset));
 
-            }
-            else if ((Y2 - (r2.height / 2) + offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 + (r2.height / 2) - offset) <= (Y1 + (r1.height / 2) - offset) || (Y1 - (r1.height / 2) + offset) >= (Y2 - (r2.height / 2) + offset) && (Y1 + (r1.height / 2) - offset) <= (Y2 + (r2.height / 2) - offset)) 
-            {
-                if((Y2 - (r2.height / 2) + offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 + (r2.height / 2) - offset) <= (Y1 + (r1.height / 2) - offset))
-                    yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
-                else if((Y1 - (r1.height / 2) + offset) >= (Y2 - (r2.height / 2) + offset) && (Y1 + (r1.height / 2) - offset) <= (Y2 + (r2.height / 2) - offset))
-                    yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
-            }
-            */
-
-
-
-            /*
-            if (pos2.position.x - pos1.position.x > 0)
-            {
-                xM = pos2.position.x;
-                yM = pos1.position.y;
-                if(xM > (pos1.position.x - (r1.width / 2)) && xM < (pos1.position.x + (r1.width / 2)))
-                    if()
-
-            }
-            else
-            {
-                xM = pos1.position.x;
-                yM = pos2.position.y;
-            }
-
-            if (xM > pos1.position.x)
-                xS = pos1.position.x + (r1.width / 2);
-            else if (xM < pos1.position.x)
-                xS = pos1.position.x - (r1.width / 2);
-            else
-                xS = pos1.position.x;
-
-            if (yM > pos1.position.y)
-                yS = pos1.position.y + (r1.height / 2);
-            else if (yM < pos1.position.y)
-                yS = pos1.position.y - (r1.height / 2);
-            else
-                yS = pos1.position.y;
-
-            if (xM > pos2.position.x)
-                xE = pos2.position.x + (r2.width / 2);
-            else if (xM < pos2.position.x)
-                xE = pos2.position.x - (r2.width / 2);
-            else
-                xE = pos2.position.x;
-
-            if (yM > pos2.position.y)
-                yE = pos2.position.y + (r2.height / 2);
-            else if (yM < pos2.position.y)
-                yE = pos2.position.y - (r2.height / 2);
-            else
-                yE = pos2.position.y;
-
-            */
-            midPoint = new Vector3(xM, yM, 0);
             startPoint = new Vector3(xS, yS, 0);
             endPoint = new Vector3(xE, yE, 0);
-
+            
             if (!RoomDoorCords.Contains(startPoint))
                 RoomDoorCords.Add(startPoint);
             if (!RoomDoorCords.Contains(endPoint))
                 RoomDoorCords.Add(endPoint);
+            if (flag == true)
+            {
+                startPoint = midS;
+                endPoint = midE;
+            }
 
             curPoint = startPoint;
-            float tempX = (int)((xE + xS) / 2);
-            //float tempY = (int)((yE + yS) / 2);
-            midX = new Vector3(tempX, yS, 0);
-            midY = new Vector3(tempX, yE, 0);
-            //bool spot1, spot2;
-            //spot1 = spot2 = false;
-            //TM1.SetTile(new Vector3Int((int)curPoint.x,(int)curPoint.y,0), t1);
+            TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t1);
             while (curPoint != endPoint)
             {
-                if(curPoint.x == endPoint.x)
+                if (curPoint.x == endPoint.x)
                 {
                     if (curPoint.y < endPoint.y)
                         curPoint.y += 1;
@@ -720,7 +703,7 @@ public class room_generator : MonoBehaviour
                         curPoint.y -= 1;
 
                 }
-                else if(curPoint.y == endPoint.y)
+                else if (curPoint.y == endPoint.y)
                 {
                     if (curPoint.x < endPoint.x)
                         curPoint.x += 1;
@@ -729,61 +712,30 @@ public class room_generator : MonoBehaviour
                 }
                 else if (curPoint.x != endPoint.x && curPoint.y != endPoint.y)
                 {
-                    if (curPoint.x < endPoint.x)
-                        curPoint.x += 1;
+                    //if((endPoint.y - startPoint.y) < (endPoint.x - startPoint.x))
+                    if ((endPoint.x - startPoint.x) > 0)
+                    {
+                        if (curPoint.y < endPoint.y)
+                            curPoint.y += 1;
+                        else
+                            curPoint.y -= 1;
+                    }
                     else
-                        curPoint.x -= 1;
+                    {
+                        if (curPoint.x < endPoint.x)
+                            curPoint.x += 1;
+                        else
+                            curPoint.x -= 1;
+                    }
                 }
-
+                TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t1);
+                
                 if (curPoint == endPoint)
                     break;
                 else
                     TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t1);
-
-                /*
-                else
-                {
-                    if (curPoint.y < endPoint.y)
-                        curPoint.y += 1;
-                    else
-                        curPoint.y -= 1;
-                }
-                */
-
-
-                /*
-                if (spot1 == false)
-                {
-                    if(curPoint.x < midX.x)
-                        curPoint.x += 1;
-                    else
-                        curPoint.x -= 1;
-                    TM1.SetTile(new Vector3Int((int)curPoint.x - 1, (int)curPoint.y, 0), t1);
-                    if (curPoint == midX)
-                        spot1 = true;
-                }
-                if (spot1 == true && spot2 == false)
-                {
-                    if (curPoint.y < midY.y)
-                        curPoint.y += 1;
-                    else
-                        curPoint.y -= 1;
-                    TM1.SetTile(new Vector3Int((int)curPoint.x - 1, (int)curPoint.y, 0), t1);
-                    if (curPoint == midY)
-                        spot2 = true;
-                }
-                if(spot1 == true && spot2 == true)
-                {
-                    if (curPoint.x < endPoint.x)
-                        curPoint.x += 1;
-                    else
-                        curPoint.x -= 1;
-                    //if (curPoint != endPoint)
-                    TM1.SetTile(new Vector3Int((int)curPoint.x - 1, (int)curPoint.y, 0), t1);
-                }
-                */
+                
             }
-            //Debug.Log("Index: " + i + " midP: " + midPoint);
             Debug.DrawLine(new Vector3(pos1.position.x, pos1.position.y, pos1.position.z),
                 new Vector3(pos2.position.x, pos2.position.y, pos2.position.z), Color.green, 2000f, true);
             /*
@@ -800,6 +752,65 @@ public class room_generator : MonoBehaviour
             */
             Debug.DrawLine(new Vector3(startPoint.x, startPoint.y, startPoint.z),
                 new Vector3(endPoint.x, endPoint.y, endPoint.z), Color.yellow, 2000f, true);
+
+        }
+        buildWalls();
+    }
+
+    void buildWalls()
+    {
+        float w, h, x ,y;
+        Vector3 curPoint, endPoint;
+        for (int i = 0; i < stayingRoomArray.Length; i++)
+        {
+            w = stayingRoomArray[i].width;
+            h = stayingRoomArray[i].height;
+            x = stayingRoomArray[i].room.transform.position.x;
+            y = stayingRoomArray[i].room.transform.position.y;
+            // UpWall, left to right
+            curPoint = new Vector3(x - (w / 2), y + (h / 2), 0f);
+            endPoint = new Vector3(x + (w / 2), y + (h / 2), 0f);
+            while(curPoint != endPoint)
+            {
+                if(!RoomDoorCords.Contains(curPoint))
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t2);
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t3);
+                curPoint.x += 1;
+            }
+            //BottomWall, left to right
+            curPoint = new Vector3(x - (w / 2), y - (h / 2) - 1, 0f);
+            endPoint = new Vector3(x + (w / 2), y - (h / 2) - 1, 0f);
+            while (curPoint != endPoint)
+            {
+                if (!RoomDoorCords.Contains(curPoint))
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t2);
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t3);
+                curPoint.x += 1;
+            }
+            //LeftWall, bottom to top
+            curPoint = new Vector3(x - (w / 2) -1, y - (h / 2), 0f);
+            endPoint = new Vector3(x - (w / 2) -1, y + (h / 2), 0f);
+            while (curPoint != endPoint)
+            {
+                if (!RoomDoorCords.Contains(curPoint))
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t2);
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t3);
+                curPoint.y += 1;
+            }
+            //RightWall, bottom to top
+            curPoint = new Vector3(x + (w / 2), y - (h / 2), 0f);
+            endPoint = new Vector3(x + (w / 2), y + (h / 2), 0f);
+            while (curPoint != endPoint)
+            {
+                if (!RoomDoorCords.Contains(curPoint))
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t2);
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t3);
+                curPoint.y += 1;
+            }
         }
     }
 
