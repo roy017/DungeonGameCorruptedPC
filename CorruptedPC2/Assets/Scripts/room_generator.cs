@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using TriangleNet.Geometry;
 using TriangleNet.Topology;
+using UnityEngine.Tilemaps;
+using UnityEngine.SceneManagement;
 
 public class room_generator : MonoBehaviour
 {
@@ -50,6 +52,20 @@ public class room_generator : MonoBehaviour
     private TriangleNet.Mesh mesh = null;
     private bool DelaunayDone = false;
     private bool MSTDone = false;
+
+    private int[,] ansMST = null;
+    private List<int> listDel1;
+    private List<int> listDel2;
+    [SerializeField]
+    private float percPathStay = 8f;
+    public Tilemap TM1;
+    public Tile t1;
+    public Tile t2;
+    public Tile t3;
+
+    private List<Vector3> RoomDoorCords;
+
+    public int offset = 1;
 
     class MST
     {
@@ -170,13 +186,34 @@ public class room_generator : MonoBehaviour
         startPos = new Vector3(0f, 0f, 0f);
         startRot = new Quaternion(0f, 0f, 0f, 0f);
 
+        //Tilemap tileMap = this.GetComponent<Tilemap>();
+        //Sprite tileSprite = Resources.Load("Sprites/TilePalettes/Floor/Floor_tiles1_0") as Sprite;
+        //Tile tile = ScriptableObject.CreateInstance<Tile>();
+        //tile.sprite = tileSprite;
+        //tileMap.SetTile(new Vector3Int(10, 10, 0), tile);
+        //TM1.SetTile(new Vector3Int(0, 0, 0), t1);
+        //TM1.SetTile(new Vector3Int(1.5, , 0), t1);
+        //tileMap.RefreshAllTiles();
+
         SpawnRoomsList = new List<int>();
         AllStayingRooms = new List<int>();
+        RoomDoorCords = new List<Vector3>();
         if(totalStayingRooms > totalRooms)
         {
             totalStayingRooms = totalRooms;
         }
         stayingRoomArray = new Room_info[totalStayingRooms];
+
+        stillAwake = true;
+        corrected = false;
+        setupStageDone = false;
+
+        polygon = new Polygon();
+        mesh = null;
+        DelaunayDone = false;
+        MSTDone = false;
+
+        ansMST = null;
 
         CreateRooms();
         spawnRooms();
@@ -185,6 +222,11 @@ public class room_generator : MonoBehaviour
 
     private void Update()
     {
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            SceneManager.LoadScene("SampleScene");
+        }
+        
         if(setupStageDone == false)
         {
             if (Time.time >= (startTime + waitTime) && stillAwake == true)
@@ -267,7 +309,7 @@ public class room_generator : MonoBehaviour
             r.transform.parent = gameObject.transform;
 
             BoxCollider2D bc2D = r.GetComponent<BoxCollider2D>();
-            bc2D.size = new Vector2(roomArray[i].width + 4f, roomArray[i].height + 4f);
+            bc2D.size = new Vector2(roomArray[i].width + 6f, roomArray[i].height + 6f);
             
 
             roomArray[i].room = r;
@@ -389,10 +431,70 @@ public class room_generator : MonoBehaviour
             Vertex v1 = mesh.vertices[edge.P1];
             Vector3 p0 = new Vector3((float)v0.x, (float)v0.y, 0.0f);
             Vector3 p1 = new Vector3((float)v1.x, (float)v1.y, 0.0f);
-            Debug.Log("p0: " + p0 + " p1: " + p1);
+            //Debug.Log("p0: " + p0 + " p1: " + p1);
         }
-
         DelaunayDone = true;
+        extractDelaunay();
+    }
+    void extractDelaunay()
+    {
+        int[,] ansDEL = new int[mesh.NumberOfEdges,1];
+        int k = 0, l = 0;
+        bool found1 = false, found2 = false;
+
+        // tempoaray solution with two lists, fix if a better solution is found
+        listDel1 = new List<int>();
+        listDel2 = new List<int>();
+        foreach (Edge edge in mesh.Edges)
+        {
+            Vertex v0 = mesh.vertices[edge.P0];
+            Vertex v1 = mesh.vertices[edge.P1];
+            Vector3 p0 = new Vector3((float)v0.x, (float)v0.y, 0.0f);
+            Vector3 p1 = new Vector3((float)v1.x, (float)v1.y, 0.0f);
+            for (int i = 0; i < stayingRoomArray.Length; i++)
+            {
+                Debug.Log("Ik Zoek");
+                if (p0 == stayingRoomArray[i].room.transform.position && found1 == false)
+                {
+                    Debug.Log("Gevonden1");
+                    k = i;
+                    //listDel1.Add(k);
+                    found1 = true;
+                }
+                else if (p1 == stayingRoomArray[i].room.transform.position && found2 == false)
+                {
+                    Debug.Log("Gevonden2");
+                    l = i;
+                    //listDel2.Add(j);
+                    found2 = true;
+                }
+                if(found1 == true && found2 == true)
+                {
+                    found1 = found2 = false;
+                    break;
+                }
+            }
+            listDel1.Add(k);
+            listDel2.Add(l);
+        }
+        /*
+        for(int i = 0; i < listDel1.Count; i++)
+        {
+            Debug.Log("From: " + stayingRoomArray[listDel1[i]].room.name + " to: " + stayingRoomArray[listDel2[i]].room.name);
+        }
+        */
+        /*
+        int tot = listDel1.Count;
+        int newTot = (int)(tot * (percPathStay / 100));
+        int rand = 0;
+        for (int i = 0; i < newTot ; i++)
+        {
+            rand = (int)Random.Range(0, tot);
+            Vector3 p0 = stayingRoomArray[listDel1[rand]].room.transform.position;
+            Vector3 p1 = stayingRoomArray[listDel2[rand]].room.transform.position;
+            Gizmos.DrawLine(p0, p1);
+        }
+        */
     }
 
     void find_MST()
@@ -403,40 +505,331 @@ public class room_generator : MonoBehaviour
 
         int[,] graph = graph_Gen();
 
-        int[,] ans = spanningTree.runMST(graph);
+        ansMST = spanningTree.runMST(graph);
 
         //draws line connections
+        /*
         for (int i = 1; i < AllStayingRooms.Count; i++)
         {
-
             Transform pos1 = stayingRoomArray[i].room.transform;
-            Transform pos2 = stayingRoomArray[ans[i, 0]].room.transform;
+            Transform pos2 = stayingRoomArray[ansMST[i, 0]].room.transform;
 
             Debug.DrawLine(new Vector3(pos1.position.x, pos1.position.y, pos1.position.z),
                 new Vector3(pos2.position.x, pos2.position.y, pos2.position.z), Color.green, 2000f, true);
+        }
+        */
+        //createPath(ansMSt);
+        MSTDone = true;
+        buildPaths();
+        //buildWalls();
+    }
 
+    //TODO improve the looks of this function
+    void buildPaths()
+    {
+        Vector3 startPoint, endPoint, curPoint, midS, midE;
+        bool flag;
+        float xS, yS, xM, yM, xE, yE;
+        for(int i = 1; i< AllStayingRooms.Count; i++)
+        {
+            Room_info r1 = stayingRoomArray[i];
+            Room_info r2 = stayingRoomArray[ansMST[i, 0]];
+            Transform pos1 = r1.room.transform;
+            Transform pos2 = r2.room.transform;
+            float X1 = pos1.position.x;
+            float X2 = pos2.position.x;
+            float Y1 = pos1.position.y;
+            float Y2 = pos2.position.y;
+            //offset = 1;
+            flag = false;
+            midS = midE = new Vector3(0, 0, 0);
+            // contains repetitive code, which should be fixed later
+            if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 - (r2.width / 2) + offset) <= (X1 + (r1.width / 2) - offset) || (X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 - (r1.width / 2) + offset) <= (X2 + (r2.width / 2) - offset))
+            {
+                if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset))
+                    xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X2 + (r2.width / 2) - offset));
+                else if ((X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 + (r1.width / 2) - offset) <= (X2 + (r2.width / 2) - offset))
+                    xS = xE = (int)Random.Range((X1 - (r1.width / 2) + offset), (X1 + (r1.width / 2) - offset));
+                else if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 - (r2.width / 2) + offset) <= (X1 + (r1.width / 2) - offset))
+                    xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X1 + (r1.width / 2) - offset));
+                else
+                    xS = xE = (int)Random.Range(X1 - (r1.width / 2) + offset, (X2 + (r2.width / 2) - offset));
+                if (Y1 > Y2)
+                {
+                    yS = Y1 - (r1.height / 2) - 1;
+                    yE = Y2 + (r2.height / 2);
+                }
+                else
+                {
+                    yS = Y1 + (r1.height / 2);
+                    yE = Y2 - (r2.height / 2) - 1;
+                }
+            }
+            else if ((X2 + (r2.width / 2) - offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset) || (X1 + (r1.width / 2) - offset) >= (X2 - (r2.width / 2) + offset) && (X1 + (r1.width / 2) - offset) <= (X2 + (r2.width / 2) - offset))
+            {
+                if ((X2 - (r2.width / 2) + offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset))
+                    xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X2 + (r2.width / 2) - offset));
+                else if ((X1 - (r1.width / 2) + offset) >= (X2 - (r2.width / 2) + offset) && (X1 + (r1.width / 2) - offset) <= (X2 + (r2.width / 2) - offset))
+                    xS = xE = (int)Random.Range((X1 - (r1.width / 2) + offset), (X1 + (r1.width / 2) - offset));
+                else if ((X2 + (r2.width / 2) - offset) >= (X1 - (r1.width / 2) + offset) && (X2 + (r2.width / 2) - offset) <= (X1 + (r1.width / 2) - offset))
+                    xS = xE = (int)Random.Range((X1 - (r1.width / 2) + offset), (X2 + (r2.width / 2) - offset));
+                else
+                    xS = xE = (int)Random.Range((X2 - (r2.width / 2) + offset), (X1 + (r2.width / 2) - offset));
+                if (Y1 > Y2)
+                {
+                    yS = Y1 - (r1.height / 2) - 1;
+                    yE = Y2 + (r2.height / 2);
+                }
+                else
+                {
+                    yS = Y1 + (r1.height / 2);
+                    yE = Y2 - (r2.height / 2) - 1;
+                }
+            }
+            else if ((Y2 - (r2.height / 2) + offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 - (r2.height / 2) + offset) <= (Y1 + (r1.height / 2) - offset) || (Y1 - (r1.height / 2) + offset) >= (Y2 - (r2.height / 2) + offset) && (Y1 - (r1.height / 2) + offset) <= (Y2 + (r2.height / 2) - offset))
+            {
+                if ((Y2 - (r2.height / 2) + offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 + (r2.height / 2) - offset) <= (Y1 + (r1.height / 2) - offset))
+                    yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
+                else if ((Y1 - (r1.height / 2) + offset) >= (Y2 - (r2.height / 2) + offset) && (Y1 + (r1.height / 2) - offset) <= (Y2 + (r2.height / 2) - offset))
+                    yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
+                else if ((Y2 - (r2.height / 2) + offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 - (r2.height / 2) + offset) <= (Y1 + (r1.height / 2) - offset))
+                    yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
+                else
+                    yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
+                if (X1 > X2)
+                {
+                    xS = X1 - (r1.width / 2) - 1;
+                    xE = X2 + (r2.width / 2);
+                }
+                else
+                {
+                    xS = X1 + (r1.width / 2);
+                    xE = X2 - (r2.width / 2) - 1;
+                }
+            }
+            else if ((Y2 + (r2.height / 2) - offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 + (r2.height / 2) - offset) <= (Y1 + (r1.height / 2) - offset) || (Y1 + (r1.height / 2) - offset) >= (Y2 - (r2.height / 2) + offset) && (Y1 + (r1.height / 2) - offset) <= (Y2 + (r2.height / 2) - offset))
+            {
+                if ((Y2 - (r2.height / 2) + offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 + (r2.height / 2) - offset) <= (Y1 + (r1.height / 2) - offset))
+                    yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
+                else if ((Y1 - (r1.height / 2) + offset) >= (Y2 - (r2.height / 2) + offset) && (Y1 + (r1.height / 2) - offset) <= (Y2 + (r2.height / 2) - offset))
+                    yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
+                else if ((Y2 + (r2.height / 2) - offset) >= (Y1 - (r1.height / 2) + offset) && (Y2 + (r2.height / 2) - offset) <= (Y1 + (r1.height / 2) - offset))
+                    yS = yE = (int)Random.Range((Y1 - (r1.height / 2) + offset), (Y2 + (r2.height / 2) - offset));
+                else
+                    yS = yE = (int)Random.Range((Y2 - (r2.height / 2) + offset), (Y1 + (r1.height / 2) - offset));
+                if (X1 > X2)
+                {
+                    xS = X1 - (r1.width / 2) - 1;
+                    xE = X2 + (r2.width / 2);
+                }
+                else
+                {
+                    xS = X1 + (r1.width / 2);
+                    xE = X2 - (r2.width / 2) - 1;
+                }
+            }
+            else
+            {
+                flag = true;
+                if (X1 > X2 && Y1 > Y2)
+                {
+                    xS = X1 - (r1.width / 2) + 2;
+                    xE = X2 + (r2.width / 2);
+                    yS = Y1 - (r1.height / 2) -1;
+                    yE = Y2 + (r2.height / 2) -1 - 2;
+                    TM1.SetTile(new Vector3Int((int)xS, (int)yS - 1, 0), t1);
+                    TM1.SetTile(new Vector3Int((int)xE + 1, (int)yE, 0), t1);
+                    midS = new Vector3(xS, yS - 2, 0);
+                    midE = new Vector3(xE + 2, yE, 0);
+                }
+                else if((X1 > X2 && Y1 < Y2))
+                {
+                    xS = X1 - (r1.width / 2) + 2;
+                    xE = X2 + (r2.width / 2);
+                    yS = Y1 + (r1.height / 2);
+                    yE = Y2 - (r2.height / 2) + 2;
+                    TM1.SetTile(new Vector3Int((int)xS, (int)yS + 1, 0), t1);
+                    TM1.SetTile(new Vector3Int((int)xE + 1, (int)yE, 0), t1);
+                    midS = new Vector3(xS, yS + 2, 0);
+                    midE = new Vector3(xE + 2, yE, 0);
+
+                }
+                else if ((X1 < X2 && Y1 > Y2))
+                {
+                    xS = X1 + (r1.width / 2);
+                    xE = X2 - (r2.width / 2) + 2;
+                    yS = Y1 - (r1.height / 2) + 2;
+                    yE = Y2 + (r2.height / 2);
+                    TM1.SetTile(new Vector3Int((int)xS + 1, (int)yS, 0), t1);
+                    TM1.SetTile(new Vector3Int((int)xE, (int)yE + 1, 0), t1);
+                    midS = new Vector3(xS + 2, yS, 0);
+                    midE = new Vector3(xE, yE + 2, 0);
+                }
+                else
+                {
+                    xS = X1 + (r1.width / 2);
+                    xE = X2 - (r2.width / 2) + 2;
+                    yS = Y1 + (r1.height / 2) - 1 - 2;
+                    yE = Y2 - (r2.height / 2) - 1;
+                    TM1.SetTile(new Vector3Int((int)xS +1, (int)yS, 0), t1);
+                    TM1.SetTile(new Vector3Int((int)xE, (int)yE -1, 0), t1);
+                    midS = new Vector3(xS + 2, yS, 0);
+                    midE = new Vector3(xE, yE - 2, 0);
+                }
+            }
+
+            startPoint = new Vector3(xS, yS, 0);
+            endPoint = new Vector3(xE, yE, 0);
+            
+            if (!RoomDoorCords.Contains(startPoint))
+                RoomDoorCords.Add(startPoint);
+            if (!RoomDoorCords.Contains(endPoint))
+                RoomDoorCords.Add(endPoint);
+            if (flag == true)
+            {
+                startPoint = midS;
+                endPoint = midE;
+            }
+
+            curPoint = startPoint;
+            TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t1);
+            while (curPoint != endPoint)
+            {
+                if (curPoint.x == endPoint.x)
+                {
+                    if (curPoint.y < endPoint.y)
+                        curPoint.y += 1;
+                    else
+                        curPoint.y -= 1;
+
+                }
+                else if (curPoint.y == endPoint.y)
+                {
+                    if (curPoint.x < endPoint.x)
+                        curPoint.x += 1;
+                    else
+                        curPoint.x -= 1;
+                }
+                else if (curPoint.x != endPoint.x && curPoint.y != endPoint.y)
+                {
+                    //if((endPoint.y - startPoint.y) < (endPoint.x - startPoint.x))
+                    if ((endPoint.x - startPoint.x) > 0)
+                    {
+                        if (curPoint.y < endPoint.y)
+                            curPoint.y += 1;
+                        else
+                            curPoint.y -= 1;
+                    }
+                    else
+                    {
+                        if (curPoint.x < endPoint.x)
+                            curPoint.x += 1;
+                        else
+                            curPoint.x -= 1;
+                    }
+                }
+                TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t1);
+                
+                if (curPoint == endPoint)
+                    break;
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t1);
+                
+            }
+            Debug.DrawLine(new Vector3(pos1.position.x, pos1.position.y, pos1.position.z),
+                new Vector3(pos2.position.x, pos2.position.y, pos2.position.z), Color.green, 2000f, true);
+            /*
+            Debug.DrawLine(new Vector3(startPoint.x, startPoint.y, startPoint.z),
+                new Vector3(midPoint.x, midPoint.y, midPoint.z), Color.yellow, 2000f, true);
+            Debug.DrawLine(new Vector3(endPoint.x, endPoint.y, endPoint.z),
+                new Vector3(midPoint.x, midPoint.y, midPoint.z), Color.blue, 2000f, true);
+            */
+            /*
+            Debug.DrawLine(new Vector3(pos1.position.x, pos1.position.y, pos1.position.z),
+                new Vector3(midPoint.x, midPoint.y, midPoint.z), Color.yellow, 2000f, true);
+            Debug.DrawLine(new Vector3(pos2.position.x, pos2.position.y, pos2.position.z),
+                new Vector3(midPoint.x, midPoint.y, midPoint.z), Color.blue, 2000f, true);
+            */
+            Debug.DrawLine(new Vector3(startPoint.x, startPoint.y, startPoint.z),
+                new Vector3(endPoint.x, endPoint.y, endPoint.z), Color.yellow, 2000f, true);
 
         }
-        createPath(ans);
-        MSTDone = true;
+        buildWalls();
+    }
+
+    void buildWalls()
+    {
+        float w, h, x ,y;
+        Vector3 curPoint, endPoint;
+        for (int i = 0; i < stayingRoomArray.Length; i++)
+        {
+            w = stayingRoomArray[i].width;
+            h = stayingRoomArray[i].height;
+            x = stayingRoomArray[i].room.transform.position.x;
+            y = stayingRoomArray[i].room.transform.position.y;
+            // UpWall, left to right
+            curPoint = new Vector3(x - (w / 2), y + (h / 2), 0f);
+            endPoint = new Vector3(x + (w / 2), y + (h / 2), 0f);
+            while(curPoint != endPoint)
+            {
+                if(!RoomDoorCords.Contains(curPoint))
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t2);
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t3);
+                curPoint.x += 1;
+            }
+            //BottomWall, left to right
+            curPoint = new Vector3(x - (w / 2), y - (h / 2) - 1, 0f);
+            endPoint = new Vector3(x + (w / 2), y - (h / 2) - 1, 0f);
+            while (curPoint != endPoint)
+            {
+                if (!RoomDoorCords.Contains(curPoint))
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t2);
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t3);
+                curPoint.x += 1;
+            }
+            //LeftWall, bottom to top
+            curPoint = new Vector3(x - (w / 2) -1, y - (h / 2), 0f);
+            endPoint = new Vector3(x - (w / 2) -1, y + (h / 2), 0f);
+            while (curPoint != endPoint)
+            {
+                if (!RoomDoorCords.Contains(curPoint))
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t2);
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t3);
+                curPoint.y += 1;
+            }
+            //RightWall, bottom to top
+            curPoint = new Vector3(x + (w / 2), y - (h / 2), 0f);
+            endPoint = new Vector3(x + (w / 2), y + (h / 2), 0f);
+            while (curPoint != endPoint)
+            {
+                if (!RoomDoorCords.Contains(curPoint))
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t2);
+                else
+                    TM1.SetTile(new Vector3Int((int)curPoint.x, (int)curPoint.y, 0), t3);
+                curPoint.y += 1;
+            }
+        }
     }
 
     void createPath(int[,] ans)
     {
         for (int i = 1; i < AllStayingRooms.Count; i++)
         {
+            GameObject r1 = stayingRoomArray[i].room.transform.gameObject;
+            GameObject r2 = stayingRoomArray[ans[i, 0]].room.transform.gameObject;
             Transform pos1 = stayingRoomArray[i].room.transform;
             Transform pos2 = stayingRoomArray[ans[i, 0]].room.transform;
-            Debug.Log("From: x: " + (int)pos1.transform.position.x + "y: " + (int)pos1.transform.position.y + "z: " + (int)pos1.transform.position.z);
-            Debug.Log("TO: x: " + (int)pos2.transform.position.x + "y: " + (int)pos2.transform.position.y + "z: " + (int)pos2.transform.position.z);
-            //child1.GetComponent<Tilemap>();
+            //Debug.Log("From: " + r1.name + " to: " + r2.name);
+            //Debug.Log("From: x: " + (int)pos1.transform.position.x + "y: " + (int)pos1.transform.position.y + "z: " + (int)pos1.transform.position.z);
+            //Debug.Log("TO: x: " + (int)pos2.transform.position.x + "y: " + (int)pos2.transform.position.y + "z: " + (int)pos2.transform.position.z);
         }
     }
 
     int[,] graph_Gen()
     {
-
-        //int length = AllStayingRooms.Count;
         int length = stayingRoomArray.Length;
         int[,] graph = new int[(length), (length)];
         for (int i = 0; i < length; i++)
@@ -449,8 +842,6 @@ public class room_generator : MonoBehaviour
                     continue;
                 }
 
-                //GameObject child1 = stayingRoomArray[i].room.transform.GetChild(0).gameObject;
-                //GameObject child2 = stayingRoomArray[j].room.transform.GetChild(0).gameObject;
                 float x1 = stayingRoomArray[i].room.transform.position.x;
                 float x2 = stayingRoomArray[j].room.transform.position.x;
                 float y1 = stayingRoomArray[i].room.transform.position.y;
@@ -458,9 +849,7 @@ public class room_generator : MonoBehaviour
                 float calc = Mathf.Sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));
                 graph[i, j] = (int)calc;
             }
-
         }
-
         return graph;
     }
 
@@ -474,6 +863,20 @@ public class room_generator : MonoBehaviour
 
         
         Gizmos.color = Color.red;
+        /*
+        int tot = listDel1.Count;
+        int newTot = (int)(tot * (percPathStay / 100));
+        int rand = 0;
+        for (int i = 0; i < newTot; i++)
+        {
+            rand = (int)Random.Range(0, tot);
+            Vector3 p0 = stayingRoomArray[listDel1[rand]].room.transform.position;
+            Vector3 p1 = stayingRoomArray[listDel2[rand]].room.transform.position;
+            Gizmos.DrawLine(p0, p1);
+        }
+        */
+        
+        /*
         foreach (Edge edge in mesh.Edges)
         {
             Vertex v0 = mesh.vertices[edge.P0];
@@ -482,6 +885,7 @@ public class room_generator : MonoBehaviour
             Vector3 p1 = new Vector3((float)v1.x, (float)v1.y, 0.0f);
             Gizmos.DrawLine(p0, p1);
         }
+        */
     }
 
     void correctPosRooms()
